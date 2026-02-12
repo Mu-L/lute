@@ -1069,7 +1069,7 @@ func (r *ProtylePreviewRenderer) renderImage(node *ast.Node, entering bool) ast.
 	} else {
 		destTokens := node.ChildByType(ast.NodeLinkDest).Tokens
 		if r.Options.Sanitize {
-			destTokens = sanitize(destTokens)
+			destTokens = SanitizeLinkDestBytes(destTokens)
 		}
 		destTokens = bytes.ReplaceAll(destTokens, editor.CaretTokens, nil)
 		dataSrcTokens := destTokens

@@ -27,7 +27,6 @@ func TagAttrVal(tagStr, attr string) string {
 
 	src := tagStr[srcIndex+len(attr+"=\""):]
 	src = src[:strings.Index(src, "\"")]
-	src = strings.ReplaceAll(src, "&amp;", "&")
 	return src
 }
 

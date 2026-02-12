@@ -1355,7 +1355,7 @@ func (r *ProtyleRenderer) renderImage(node *ast.Node, entering bool) ast.WalkSta
 	} else {
 		destTokens := node.ChildByType(ast.NodeLinkDest).Tokens
 		if r.Options.Sanitize {
-			destTokens = sanitize(destTokens)
+			destTokens = []byte(SanitizeLinkDest(string(destTokens)))
 		}
 		destTokens = bytes.ReplaceAll(destTokens, editor.CaretTokens, nil)
 		dataSrcTokens := destTokens
@@ -1438,7 +1438,7 @@ func (r *ProtyleRenderer) renderLink(node *ast.Node, entering bool) ast.WalkStat
 		destTokens := dest.Tokens
 		if r.Options.Sanitize {
 			destTokens = bytes.TrimSpace(destTokens)
-			destTokens = sanitize(destTokens)
+			destTokens = SanitizeLinkDestBytes(destTokens)
 			tokens := bytes.ToLower(destTokens)
 			if bytes.HasPrefix(tokens, []byte("javascript:")) {
 				destTokens = nil

@@ -1338,7 +1338,7 @@ func (r *ProtyleExportRenderer) renderImage(node *ast.Node, entering bool) ast.W
 	} else {
 		destTokens := node.ChildByType(ast.NodeLinkDest).Tokens
 		if r.Options.Sanitize {
-			destTokens = sanitize(destTokens)
+			destTokens = SanitizeLinkDestBytes(destTokens)
 		}
 		destTokens = bytes.ReplaceAll(destTokens, editor.CaretTokens, nil)
 		dataSrcTokens := destTokens
@@ -1411,7 +1411,7 @@ func (r *ProtyleExportRenderer) renderLink(node *ast.Node, entering bool) ast.Wa
 		dest := node.ChildByType(ast.NodeLinkDest)
 		destTokens := dest.Tokens
 		if r.Options.Sanitize {
-			destTokens = sanitize(destTokens)
+			destTokens = SanitizeLinkDestBytes(destTokens)
 		}
 
 		destTokens = r.LinkPath(destTokens)

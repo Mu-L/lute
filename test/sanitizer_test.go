@@ -19,12 +19,12 @@ import (
 
 var sanitizerTests = []parseTest{
 
-	//{"19", "[foo](zotero://open-pdf/library/items/AGCXXXCX?page=7&annotation=PP7K9AR2)", "<p><a href=\"zotero://open-pdf/library/items/AGCXXXCX?page=7&amp;annotation=PP7K9AR2\">foo</a></p>\n"},
-	//{"18", "[foo](https://b3log.org/siyuan/?foo&bar)", "<p><a href=\"https://b3log.org/siyuan/?foo&amp;bar\">foo</a></p>\n"},
+	{"19", "[foo](zotero://open-pdf/library/items/AGCXXXCX?page=7&annotation=PP7K9AR2)", "<p><a href=\"zotero://open-pdf/library/items/AGCXXXCX?page=7&amp;annotation=PP7K9AR2\">foo</a></p>\n"},
+	{"18", "[foo](https://b3log.org/siyuan/?foo&bar)", "<p><a href=\"https://b3log.org/siyuan/?foo&amp;bar\">foo</a></p>\n"},
 	{"17", "[foo](javascript:alert('bar'))", "<p><a href=\"\">foo</a></p>\n"},
 	{"16", "<form><input formaction=javascript:alert('xss') type=submit value='click me'></input></form>", ""},
 	{"15", "<meta http-equiv=\"refresh\" content=\"0\" />", "<meta content=\"0\"/>\n"},
-	{"14", "<div><p /><a href=\"javascript:alert('xss')\">click me</a></div>", "<div><p/>click me</div>\n"},
+	{"14", "<div><p /><a href=\"javascript:alert('xss')\">click me</a></div>", "<div><p><a>click me</a></p></div>\n"},
 	{"13", "<iframe src=\"data&NewLine;:text/html,%3Cscript%3Ealert('xss')%3C%2Fscript%3E\"></iframe>", ""},
 	{"12", "<iframe src=\"data&Tab;:text/html,%3Cscript%3Ealert('xss')%3C%2Fscript%3E\"></iframe>", ""},
 	{"11", "<iframe src=\"java&NewLine;script:alert('xss')\"></iframe>", ""},
@@ -35,7 +35,7 @@ var sanitizerTests = []parseTest{
 	{"6", "<img src=\"foo\" onload=\"alert(1)\" onerror=\"alert(2)\"/>", "<img src=\"foo\"/>\n"},
 	{"5", "<iframe src='javascript:parent.require(\"child_process\").exec(\"open -a Calculator\")'></iframe>", ""},
 	{"4", "![Escape SRC - onerror](\"onerror=\"alert('ImageOnError'))", "<p><img src=\"%22onerror=%22alert(&#39;ImageOnError&#39;)\" alt=\"Escape SRC - onerror\"/></p>\n"},
-	{"3", "<EMBED SRC=\"data:image/svg+xml;base64,mock payload\" type=\"image/svg+xml\" AllowScriptAccess=\"always\"></EMBED>", "<p><embed type=\"image/svg+xml\" allowscriptaccess=\"always\"></embed></p>\n"},
+	{"3", "<EMBED SRC=\"data:image/svg+xml;base64,mock payload\" type=\"image/svg+xml\" AllowScriptAccess=\"always\"></EMBED>", "<p><embed type=\"image/svg+xml\" allowscriptaccess=\"always\"/></p>\n"},
 	{"2", "<foo>bar</foo>", "<p>bar</p>\n"},
 	{"1", "<img onerror=\"alert(1)\" src=\"bar.png\" />", "<img src=\"bar.png\"/>\n"},
 	{"0", "foo<script>alert(1)</script>bar", "<p>fooalert(1)bar</p>\n"},
@@ -57,7 +57,7 @@ var sanitizerVditorTests = []parseTest{
 
 	{"8", "<img OnError=\"alert(1)\" src=\"bar.png\" />", "<p data-block=\"0\"><img src=\"bar.png\" alt=\"\"/></p>"},
 	{"7", "<iframe src=\"//player.bilibili.com/player.html?aid=test&page=1\" scrolling=\"no\" border=\"0\" frameborder=\"no\" framespacing=\"0\" allowfullscreen=\"true\"> </iframe>", "<div class=\"vditor-wysiwyg__block\" data-type=\"html-block\" data-block=\"0\"><pre><code>&lt;iframe src=&quot;https://player.bilibili.com/player.html?aid=test&amp;page=1&quot; scrolling=&quot;no&quot; border=&quot;0&quot; frameborder=&quot;no&quot; framespacing=&quot;0&quot; allowfullscreen=&quot;true&quot;&gt;&lt;/iframe&gt;</code></pre><pre class=\"vditor-wysiwyg__preview\" data-render=\"2\"><iframe src=\"https://player.bilibili.com/player.html?aid=test&amp;page=1\" scrolling=\"no\" border=\"0\" frameborder=\"no\" framespacing=\"0\" allowfullscreen=\"true\"></iframe></pre></div>"},
-	{"6", "<div class=\"vditor-wysiwyg__block\" data-type=\"html-block\" data-block=\"0\"><pre><code>&lt;img src=\"test1<wbr>\" onerror=\"alert('XSS')\"&gt;</code></pre><pre class=\"vditor-wysiwyg__preview\" data-render=\"1\"><img src=\"test\" onerror=\"alert('XSS')\"></pre></div>", "<div class=\"vditor-wysiwyg__block\" data-type=\"html-block\" data-block=\"0\"><pre><code>&lt;img src=&quot;test1<wbr>&quot; onerror=&quot;alert('XSS')&quot;&gt;</code></pre><pre class=\"vditor-wysiwyg__preview\" data-render=\"2\"><img src=\"test1\"></pre></div>"},
+	{"6", "<div class=\"vditor-wysiwyg__block\" data-type=\"html-block\" data-block=\"0\"><pre><code>&lt;img src=\"test1<wbr>\" onerror=\"alert('XSS')\"&gt;</code></pre><pre class=\"vditor-wysiwyg__preview\" data-render=\"1\"><img src=\"test\" onerror=\"alert('XSS')\"></pre></div>", "<div class=\"vditor-wysiwyg__block\" data-type=\"html-block\" data-block=\"0\"><pre><code>&lt;img src=&quot;test1<wbr>&quot; onerror=&quot;alert('XSS')&quot;&gt;</code></pre><pre class=\"vditor-wysiwyg__preview\" data-render=\"2\"><img src=\"test1\"/></pre></div>"},
 	{"5", "<iframe src=\"javascript:parent.require('child_process').exec('open -a Calculator')\"></iframe>", "<div class=\"vditor-wysiwyg__block\" data-type=\"html-block\" data-block=\"0\"><pre><code>&lt;iframe src=&quot;javascript:parent.require('child_process').exec('open -a Calculator')&quot;&gt;&lt;/iframe&gt;</code></pre><pre class=\"vditor-wysiwyg__preview\" data-render=\"2\"></pre></div>"},
 	{"4", "![Escape SRC - onerror](\"onerror=\"alert('ImageOnError'))", "<p data-block=\"0\"><img alt=\"Escape SRC - onerror\"/></p>"},
 	{"3", "<EMBED SRC=\"data:image/svg+xml;base64,mock payload\" type=\"image/svg+xml\" AllowScriptAccess=\"always\"></EMBED>", "<p data-block=\"0\">\u200b<code data-type=\"html-inline\">\u200b&lt;embed src=&quot;data:image/svg+xml;base64,mock payload&quot; type=&quot;image/svg+xml&quot; allowscriptaccess=&quot;always&quot;/&gt;</code></p>"},
@@ -86,7 +86,7 @@ func TestSanitize(t *testing.T) {
 	}
 
 	output = render.Sanitize("![a](&quot;<img src=xss onerror=alert(1)>)\n")
-	if "![a](&#34;<img src=\"xss\">)\n" != output {
+	if "![a](&#34;<img src=\"xss\"/>)\n" != output {
 		t.Fatalf("sanitize failed")
 	}
 }

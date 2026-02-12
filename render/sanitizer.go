@@ -11,33 +11,24 @@
 package render
 
 import (
+	"bytes"
+	"regexp"
 	"strings"
 
+	"github.com/88250/lute/html"
 	"github.com/88250/lute/util"
 	"github.com/microcosm-cc/bluemonday"
 )
 
-// 没有实现可扩展的策略，仅过滤不安全的标签和属性。
-// 鸣谢 https://github.com/microcosm-cc/bluemonday
-
-var setOfElementsToSkipContent = map[string]interface{}{
-	"frame":    nil,
-	"frameset": nil,
-	//"iframe":   nil,
-	"noembed":  nil,
-	"noframes": nil,
-	"noscript": nil,
-	"nostyle":  nil,
-	"object":   nil,
-	"script":   nil,
-	"style":    nil,
-	"title":    nil,
+func SanitizeLinkDestBytes(src []byte) []byte {
+	return []byte(SanitizeLinkDest(string(src)))
 }
 
 func SanitizeLinkDest(src string) string {
 	ret := strings.ReplaceAll(src, "\"", "__@QUOTE@__")
 	ret = strings.ReplaceAll(ret, " ", "__@SPACE@__")
 	ret = strings.ReplaceAll(ret, "#", "__@HASH@__")
+	ret = strings.ReplaceAll(ret, "&", "__@AMP@__")
 	ret = "<a href=\"" + ret + "\"></a>"
 	sanitizer := newSanitizer()
 	ret = sanitizer.Sanitize(ret)
@@ -45,15 +36,53 @@ func SanitizeLinkDest(src string) string {
 	ret = strings.ReplaceAll(ret, "__@QUOTE@__", "\"")
 	ret = strings.ReplaceAll(ret, "__@SPACE@__", " ")
 	ret = strings.ReplaceAll(ret, "__@HASH@__", "#")
+	ret = strings.ReplaceAll(ret, "__@AMP@__", "&")
+	ret = strings.TrimSpace(ret)
+	if strings.HasPrefix(ret, "javascript:") {
+		return ""
+	}
 	return ret
 }
 
 func Sanitize(str string) string {
-	return newSanitizer().Sanitize(str)
+	return string(sanitize([]byte(str)))
 }
 
 func sanitize(tokens []byte) []byte {
-	return newSanitizer().SanitizeBytes(tokens)
+	ret := newSanitizer().SanitizeBytes(tokens)
+	node, err := html.Parse(bytes.NewBuffer(ret))
+	if nil != err {
+		return ret
+	}
+	node = node.FirstChild // html 节点
+	if nil != node.FirstChild && nil != node.FirstChild.FirstChild {
+		if "meta" == node.FirstChild.FirstChild.Data {
+			return ret
+		}
+	}
+
+	var f func(*html.Node)
+	f = func(n *html.Node) {
+		if n.Type == html.ElementNode {
+			for i := len(n.Attr) - 1; i >= 0; i-- {
+				attr := n.Attr[i]
+				if attr.Key == "href" || attr.Key == "src" {
+					val := strings.ToLower(strings.TrimSpace(attr.Val))
+					if strings.HasPrefix(val, "javascript:") || strings.HasPrefix(val, "data:") {
+						n.Attr = append(n.Attr[:i], n.Attr[i+1:]...)
+					}
+				}
+			}
+		}
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			f(c)
+		}
+	}
+	f(node)
+
+	ret = util.DomHTML(node.LastChild)
+	ret = []byte(strings.TrimSuffix(strings.TrimPrefix(string(ret), "<body>"), "</body>"))
+	return ret
 }
 
 func newSanitizer() *bluemonday.Policy {
@@ -74,6 +103,11 @@ func newSanitizer() *bluemonday.Policy {
 	ret.AllowAttrs("controls", "autoplay", "loop", "muted", "src").OnElements("video", "audio")
 	ret.AllowAttrs("type", "allowscriptaccess").OnElements("embed")
 	ret.AllowAttrs("open").OnElements("details")
+
+	ret.AllowURLSchemesMatching(regexp.MustCompile("(?i)^[a-z][a-z0-9+.-]*$"))
+
+	ret.RequireParseableURLs(true)
+	ret.RequireNoFollowOnLinks(false)
 
 	ret.AllowElements("details", "summary")
 	return ret
