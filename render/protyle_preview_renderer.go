@@ -870,6 +870,17 @@ func (r *ProtylePreviewRenderer) renderMathBlock(node *ast.Node, entering bool) 
 }
 
 func (r *ProtylePreviewRenderer) renderTableCell(node *ast.Node, entering bool) ast.WalkStatus {
+	fnNone := false
+	for _, kv := range node.KramdownIAL {
+		if "class" == kv[0] && strings.Contains(kv[1], "fn__none") {
+			fnNone = true
+			break
+		}
+	}
+	if fnNone {
+		return ast.WalkContinue
+	}
+
 	tag := "td"
 	if ast.NodeTableHead == node.Parent.Parent.Type {
 		tag = "th"
